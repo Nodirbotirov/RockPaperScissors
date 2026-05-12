@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matchmaking Test</title>
+</head>
+<body>
+
+<h2>Matchmaking</h2>
+
+<input id="playerId" placeholder="Your name">
+<button onclick="join()">Join Game</button>
+
+<ul id="messages"></ul>
+
+<button onclick="sendMove('Rock')">Rock</button>
+<button onclick="sendMove('Paper')">Paper</button>
+<button onclick="sendMove('Scissors')">Scissors</button>
+
+<!-- 🔥 MUHIM: kutubxonalar -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+
+<script>
+    let stomp = null;
+
+    function connect() {
+        let socket = new SockJS('/ws');
+        stomp = Stomp.over(socket);
+
+        stomp.connect({}, function () {
+            console.log("Connected");
+
+            stomp.subscribe('/topic/match', function (msg) {
+              console.log(msg.body);
+
+              if (msg.body.startsWith("Room created")) {
+                  let roomId = msg.body.split(": ")[1];
+                  joinRoom(roomId);
+              }
+            });
+        });
+    }
+
+    let currentRoom = null;
+    let currentPlayer = null;
+
+    function join() {
+        currentPlayer =
+            document.getElementById("playerId").value
+        stomp.send("/app/join", {}, currentPlayer);
+    }
+
+    function joinRoom(roomId) {
+
+        currentRoom = roomId;
+
+        stomp.subscribe('/topic/room/' + roomId,
+            function (msg) {
+
+            console.log("ROOM:", msg.body);
+        });
+    }
+
+    function sendMove(move) {
+
+        let data = {
+            roomId: currentRoom,
+            player: currentPlayer,
+            move: move
+        };
+
+        stomp.send(
+            "/app/move",
+            {
+                "content-type": "application/json"
+            },
+            JSON.stringify(data)
+        )
+    }
+
+    connect();
+</script>
+
+</body>
+</html>

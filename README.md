@@ -1,2 +1,2 @@
 # RockPaperScissors
-The mini-game will begin soon.
+A mini-game will begin soon.

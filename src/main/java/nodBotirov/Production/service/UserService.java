@@ -34,4 +34,27 @@ public class UserService {
     public User saveUser(User user) {
         return userRepository.save(user);
     }
+
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow();
+    }
+
+    public User addWin(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow();
+
+        user.setWins(user.getWins() + 1);
+
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow();
+
+        userRepository.delete(user);
+    }
 }

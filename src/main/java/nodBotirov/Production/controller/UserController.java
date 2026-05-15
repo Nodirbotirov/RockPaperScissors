@@ -1,5 +1,7 @@
 package nodBotirov.Production.controller;
 
+import nodBotirov.Production.dto.UserRequestDTO;
+import nodBotirov.Production.dto.UserResponseDTO;
 import nodBotirov.Production.entity.User;
 import nodBotirov.Production.service.UserService;
 import org.springframework.web.bind.annotation.*;
@@ -22,9 +24,9 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public User createUser(@RequestBody User user) {
+    public UserResponseDTO createUser(@RequestBody UserRequestDTO dto) {
 
-        return userService.saveUser(user);
+        return userService.createUser(dto);
     }
 
     @GetMapping("/users/{id}")

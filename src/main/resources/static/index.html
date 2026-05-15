@@ -54,7 +54,7 @@
 
         currentRoom = roomId;
 
-        stomp.subscribe('/topic/room/' + roomId,
+        stomp.subscribe('/topic/gameRoom/' + roomId,
             function (msg) {
 
             console.log("ROOM:", msg.body);

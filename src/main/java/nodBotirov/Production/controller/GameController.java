@@ -1,96 +1,91 @@
 package nodBotirov.Production.controller;
 
 import nodBotirov.Production.dto.MoveMessage;
-import nodBotirov.Production.model.Room;
+import nodBotirov.Production.model.GameRoom;
+import nodBotirov.Production.service.GameService;
+import nodBotirov.Production.service.MatchService;
 import nodBotirov.Production.service.MatchmakingService;
+import nodBotirov.Production.service.UserService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 @Controller
 public class GameController {
 
-    private final MatchmakingService service;
+    private final MatchmakingService matchmakingService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final GameService gameService;
+    private final MatchService matchService;
+    private final UserService userService;
 
-    public GameController(MatchmakingService service,
-                          SimpMessagingTemplate messagingTemplate) {
-        this.service = service;
+    public GameController(
+            MatchmakingService matchmakingService,
+            SimpMessagingTemplate messagingTemplate,
+            GameService gameService,
+            MatchService matchService,
+            UserService userService
+    ) {
+
+        this.matchmakingService = matchmakingService;
         this.messagingTemplate = messagingTemplate;
+        this.gameService = gameService;
+        this.matchService = matchService;
+        this.userService = userService;
     }
 
     @MessageMapping("/join")
-    public void join(String playerId) {
+    public void joinRoom(MoveMessage message) {
 
-        Room room = service.join(playerId);
+        matchmakingService.join(
+                message.getRoomId(),
+                message.getPlayer()
+        );
 
-        if (room == null) {
-            messagingTemplate.convertAndSend("/topic/match",
-                    "Waiting for opponent...");
-
-        } else {
-
-            String roomTopic = "/topic/room/" + room.getRoomId();
-
-            messagingTemplate.convertAndSend(roomTopic,
-                    "Match: " + room.getPlayer1() + " vs " + room.getPlayer2());
-
-            messagingTemplate.convertAndSend("/topic/match",
-                    "Room created: " + room.getRoomId());
-        }
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + message.getRoomId(),
+                message.getPlayer() + " joined room!"
+        );
     }
 
     @MessageMapping("/move")
-    public void move(@Payload MoveMessage message) {
+    public void move(MoveMessage move) {
 
-        Room room = service.getRoom(message.getRoomId());
+        GameRoom room =
+                matchmakingService.getRoom(
+                        move.getRoomId()
+                );
 
-        room.getMoves().put(
-                message.getPlayer(),
-                message.getMove()
+        String result =
+                gameService.processMove(
+                        room,
+                        move.getPlayer(),
+                        move.getMove()
+                );
+
+        if (result == null) {
+            return;
+        }
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + move.getRoomId(),
+                result
         );
 
-        if (room.getMoves().size() == 2) {
+        String winner =
+                gameService.extractWinner(result);
 
-            String p1Move = room.getMoves().get(room.getPlayer1());
-            String p2Move = room.getMoves().get(room.getPlayer2());
+        if (winner != null) {
 
-            String result = decide(
+            userService.addWinByUsername(winner);
+
+            matchService.saveMatch(
                     room.getPlayer1(),
-                    p1Move,
                     room.getPlayer2(),
-                    p2Move
+                    winner
             );
-
-            messagingTemplate.convertAndSend(
-                    "/topic/room/" + room.getRoomId(),
-                    result
-            );
-
-            room.getMoves().clear();
         }
+
+        room.getMoves().clear();
     }
-
-    private String decide(String p1,
-                          String m1,
-                          String p2,
-                          String m2) {
-        if (m1.equals(m2)) {
-            return "Draw!";
-        }
-
-        if (
-                (m1.equals("Rock") && m2.equals("Scissors")) ||
-                (m1.equals("Paper") && m2.equals("Rock")) ||
-                (m1.equals("Scissors") && m2.equals("Paper"))
-        ){
-            return p1 + " wins!";
-        }
-
-        return p2 + " wins!";
-    }
-
-
 }

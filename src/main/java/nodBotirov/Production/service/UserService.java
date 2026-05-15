@@ -1,6 +1,9 @@
 package nodBotirov.Production.service;
 
+import nodBotirov.Production.dto.UserRequestDTO;
+import nodBotirov.Production.dto.UserResponseDTO;
 import nodBotirov.Production.entity.User;
+import nodBotirov.Production.exception.UserNotFoundException;
 import nodBotirov.Production.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,35 +18,37 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public void createUser() {
+    public UserResponseDTO createUser(UserRequestDTO dto) {
+        User user = new User();
+        user.setUsername(dto.getUsername());
+        user.setWins(dto.getWins());
 
-        User user = new User(
-                "Nodir",
-                5
+        User saved = userRepository.save(user);
+
+        return new UserResponseDTO(
+                saved.getId(),
+                saved.getUsername(),
+                saved.getWins()
         );
-
-        userRepository.save(user);
-
-        System.out.println("User saved");
     }
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public User saveUser(User user) {
-        return userRepository.save(user);
-    }
-
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found with id: " + id)
+                );
     }
 
     public User addWin(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found with id: " + id)
+                );
 
         user.setWins(user.getWins() + 1);
 
@@ -53,8 +58,22 @@ public class UserService {
     public void deleteUser(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found with id: " + id)
+                );
 
         userRepository.delete(user);
+    }
+
+    public void addWinByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new UserNotFoundException(
+                                "User not found"
+                        )
+                );
+        user.setWins(user.getWins() + 1);
+
+        userRepository.save(user);
     }
 }

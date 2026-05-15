@@ -1,6 +1,6 @@
 package nodBotirov.Production.service;
 
-import nodBotirov.Production.model.Room;
+import nodBotirov.Production.model.GameRoom;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -9,9 +9,9 @@ import java.util.*;
 public class MatchmakingService {
 
     private Queue<String> queue = new LinkedList<>();
-    private Map<String, Room> rooms = new HashMap<>();
+    private Map<String, GameRoom> rooms = new HashMap<>();
 
-    public synchronized Room join(String playerId) {
+    public synchronized GameRoom join(String playerId, String player) {
 
         if (queue.isEmpty()) {
             queue.add(playerId);
@@ -21,13 +21,13 @@ public class MatchmakingService {
 
             String roomId = UUID.randomUUID().toString();
 
-            Room room = new Room(roomId, opponent, playerId);
-            rooms.put(roomId, room);
+            GameRoom gameRoom = new GameRoom(roomId, opponent, playerId);
+            rooms.put(roomId, gameRoom);
 
-            return room;
+            return gameRoom;
         }
     }
-    public Room getRoom(String roomId) {
+    public GameRoom getRoom(String roomId) {
         return rooms.get(roomId);
     }
 }

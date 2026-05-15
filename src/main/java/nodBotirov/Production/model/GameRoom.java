@@ -3,7 +3,7 @@ package nodBotirov.Production.model;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Room {
+public class GameRoom {
 
     private String roomId;
     private String player1;
@@ -12,7 +12,7 @@ public class Room {
     // player -> move
     private Map<String, String> moves = new HashMap<>();
 
-    public Room(String roomId, String player1, String player2) {
+    public GameRoom(String roomId, String player1, String player2) {
         this.roomId = roomId;
         this.player1 = player1;
         this.player2 = player2;
